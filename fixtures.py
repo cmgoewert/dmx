@@ -44,7 +44,7 @@ class Fixture:
 @dataclass
 class Universe:
     fixtures: list[Fixture]
-    controller: Controller = Controller('COM5')
+    controller: Controller = Controller('COM4')
     filled_channels: int = 0
 
     def __update_and_submit(self):
@@ -58,29 +58,61 @@ class Universe:
     def set_random_color_cycle(self, bpm):
         #i guess interupt the kernel?
         #update this with start stop control, : https://stackoverflow.com/questions/3393612/run-certain-code-every-n-seconds
-        cycle_in_sec = (bpm / 60) / 4
+        cycle_in_sec = (bpm / 60)
         while True:
+            random_blue = random.randint(0,255)
+            random_red = random.randint(0,255)
+            random_green = random.randint(0,255)
+
             for fixture in self.fixtures:
-                fixture.find_rgb("blue", random.randint(0,255))
-                fixture.find_rgb("red", random.randint(0,255))
-                fixture.find_rgb("green", random.randint(0,255))
+                if fixture.name == "led_bar":
+                    fixture.find_rgb("blue", int(random_blue / 2.55))
+                    fixture.find_rgb("red", int(random_red / 2.55))
+                    fixture.find_rgb("green", int(random_green / 2.55))
+                else:
+                    fixture.find_rgb("blue", random_blue)
+                    fixture.find_rgb("red", random_red)
+                    fixture.find_rgb("green", random_green)                    
 
             self.__update_and_submit()
-            time.sleep(cycle_in_sec)
+            time.sleep(1 / cycle_in_sec)
 
     def set_blue(self):
         for fixture in self.fixtures:
-            fixture.find_rgb("blue", 255)
-            fixture.find_rgb("red", 0)
-            fixture.find_rgb("green", 0)
+            if fixture.name is "led_bar":
+                fixture.find_rgb("blue", 100)
+                fixture.find_rgb("red", 0)
+                fixture.find_rgb("green", 0)
+            else:
+                fixture.find_rgb("blue", 255)
+                fixture.find_rgb("red", 0)
+                fixture.find_rgb("green", 0)
+
+        self.__update_and_submit()
+
+    def set_purple(self):
+        for fixture in self.fixtures:
+            if fixture.name is "led_bar":
+                fixture.find_rgb("blue", 100)
+                fixture.find_rgb("red", 100)
+                fixture.find_rgb("green", 0)
+            else:
+                fixture.find_rgb("blue", 255)
+                fixture.find_rgb("red", 255)
+                fixture.find_rgb("green", 0)
 
         self.__update_and_submit()
 
     def set_red(self):
         for fixture in self.fixtures:
-            fixture.find_rgb("blue", 0)
-            fixture.find_rgb("red", 255)
-            fixture.find_rgb("green", 0)
+            if fixture.name is "led_bar":
+                fixture.find_rgb("blue", 0)
+                fixture.find_rgb("red", 100)
+                fixture.find_rgb("green", 0)
+            else:
+                fixture.find_rgb("blue", 0)
+                fixture.find_rgb("red", 255)
+                fixture.find_rgb("green", 0)
 
         self.__update_and_submit()
 
@@ -101,6 +133,51 @@ class Universe:
     def blackout(self):
         #sets all values to 0
         self.controller.clear_channels()
+
+    def chase_to_blue(self, duration):
+        increment = duration / 144
+        i = 1
+        while i < 430:
+            for fixture in self.fixtures:
+                if fixture.name == "led_bar":
+                    fixture.channels[i].value=0
+                    i = i + 1
+                    fixture.channels[i].value=255
+                    i = i + 1
+                    fixture.channels[i].value=0
+                    i = i + 1
+            self.__update_and_submit()
+            time.sleep(increment)
+        for fixture in self.fixtures:
+            if fixture.name != "led_bar":
+                fixture.find_rgb("blue", 255)
+                fixture.find_rgb("red", 0)
+                fixture.find_rgb("green", 0)
+        self.__update_and_submit()
+
+    def strobe_led_bar(self, duration):
+        cycle_in_sec = (duration / 60)
+        i = 0
+        while True:
+            for fixture in self.fixtures:
+                if fixture.name == "led_bar":
+                    if i % 2 == 0:
+                        fixture.find_rgb("blue", 100)
+                        fixture.find_rgb("red", 100)
+                        fixture.find_rgb("green", 100) 
+                    else:
+                        fixture.find_rgb("blue", 0)
+                        fixture.find_rgb("red", 0)
+                        fixture.find_rgb("green", 0) 
+
+            i = i+1
+            self.__update_and_submit()
+            time.sleep(1 / cycle_in_sec)
+            
+            
+
+
+
 
 
 
