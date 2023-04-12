@@ -4,6 +4,28 @@ import time
 import random
 
 @dataclass
+class Color:
+    name: str
+    red: int
+    green: int
+    blue: int
+
+def generate_led_bar_channels(starting_channel):
+    channels = [] 
+    
+    for i in range(0, 144):
+        channels.append(Channel(starting_channel,0,"green",""))
+        starting_channel = starting_channel + 1
+
+        channels.append(Channel(starting_channel,0,"red",""))
+        starting_channel = starting_channel + 1
+        
+        channels.append(Channel(starting_channel,0,"blue",""))
+        starting_channel = starting_channel + 1
+
+    return channels
+
+@dataclass
 class Channel:
     index: int
     value: int
@@ -21,6 +43,7 @@ class Fixture:
     name: str
     channel_count: int
     channels: list[Channel]
+    color_max: int = 255
 
     def set_strobe(self, percent):
         percent_from_255 = round((255 * percent) / 100)
@@ -36,16 +59,25 @@ class Fixture:
             if channel.type == "strobe":
                 channel.update_value(percent_from_255)
 
-    def find_rgb(self, rgb_str, value):
+    def set_color(self, color):
         for channel in self.channels:
-            if channel.type == rgb_str:
-                channel.update_value(value)
-
+            if channel.type == "red":
+                channel.update_value(int((color.red) / (255 / self.color_max)))
+            if channel.type == "green":
+                channel.update_value(int((color.green) / (255 / self.color_max)))
+            if channel.type == "blue":
+                channel.update_value(int((color.blue) / (255 / self.color_max)))
 @dataclass
 class Universe:
     fixtures: list[Fixture]
     controller: Controller = Controller('COM4')
-    filled_channels: int = 0
+    filled_channels: int = 1
+
+    def add_fixture(self, fixture):
+        for channel in fixture.channels:
+            channel.update_index(self.filled_channels)
+            self.filled_channels =  self.filled_channels + 1
+        self.fixtures.append(fixture)
 
     def __update_and_submit(self):
         for fixture in self.fixtures:
@@ -54,6 +86,25 @@ class Universe:
                 self.controller.set_channel(channel.index, channel.value)
         
         self.controller.submit()
+
+    def set_all_colors(self, color):
+        for fixture in self.fixtures:
+            fixture.set_color(color)
+
+        self.__update_and_submit()
+
+    def blackout(self):
+        #sets all values to 0
+        self.controller.clear_channels()
+
+    def blackout(self):
+        #sets all values to 0
+        self.controller.clear_channels()
+
+
+
+        
+
 
     def set_random_color_cycle(self, bpm):
         #i guess interupt the kernel?
@@ -77,62 +128,13 @@ class Universe:
             self.__update_and_submit()
             time.sleep(1 / cycle_in_sec)
 
-    def set_blue(self):
-        for fixture in self.fixtures:
-            if fixture.name is "led_bar":
-                fixture.find_rgb("blue", 100)
-                fixture.find_rgb("red", 0)
-                fixture.find_rgb("green", 0)
-            else:
-                fixture.find_rgb("blue", 255)
-                fixture.find_rgb("red", 0)
-                fixture.find_rgb("green", 0)
 
-        self.__update_and_submit()
-
-    def set_purple(self):
-        for fixture in self.fixtures:
-            if fixture.name is "led_bar":
-                fixture.find_rgb("blue", 100)
-                fixture.find_rgb("red", 100)
-                fixture.find_rgb("green", 0)
-            else:
-                fixture.find_rgb("blue", 255)
-                fixture.find_rgb("red", 255)
-                fixture.find_rgb("green", 0)
-
-        self.__update_and_submit()
-
-    def set_red(self):
-        for fixture in self.fixtures:
-            if fixture.name is "led_bar":
-                fixture.find_rgb("blue", 0)
-                fixture.find_rgb("red", 100)
-                fixture.find_rgb("green", 0)
-            else:
-                fixture.find_rgb("blue", 0)
-                fixture.find_rgb("red", 255)
-                fixture.find_rgb("green", 0)
-
-        self.__update_and_submit()
-
-    def set_green(self):
-        for fixture in self.fixtures:
-            fixture.find_rgb("blue", 0)
-            fixture.find_rgb("red", 0)
-            fixture.find_rgb("green", 255)
-
-        self.__update_and_submit()
         
     def set_strobe_percent(self, percent):
         for fixture in self.fixtures:
             fixture.set_strobe(percent)
 
         self.__update_and_submit()
-
-    def blackout(self):
-        #sets all values to 0
-        self.controller.clear_channels()
 
     def chase_to_blue(self, duration):
         increment = duration / 144
