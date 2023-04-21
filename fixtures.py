@@ -80,20 +80,29 @@ class Fixture:
     channel_count: int
     channels: list[Channel]
     color_max: int = 255
+    strobe_range: tuple = (0,255)
 
     def set_strobe(self, percent):
-        percent_from_255 = round((255 * percent) / 100)
+        diff = self.strobe_range[1] - self.strobe_range[0]
+        percent_from_diff = round((diff * percent) / 100)
         #custom rules, theres gotta be a better way!
-        if self.name=="strobe":
-            strobe_fixture_percent_val = 128 + round((122 * percent) / 100) if percent > 0 else 0
-            for channel in self.channels:
-                if channel.type == "strobe":
-                    channel.update_value(strobe_fixture_percent_val)
-            return
-
+        value = self.strobe_range[0] + percent_from_diff
+        if percent == 0:
+            value = 0
         for channel in self.channels:
             if channel.type == "strobe":
-                channel.update_value(percent_from_255)
+                channel.update_value(value)
+
+        # if self.name=="strobe":
+        #     strobe_fixture_percent_val = 128 + round((122 * percent) / 100) if percent > 0 else 0
+        #     for channel in self.channels:
+        #         if channel.type == "strobe":
+        #             channel.update_value(strobe_fixture_percent_val)
+        #     return
+
+        # for channel in self.channels:
+        #     if channel.type == "strobe":
+        #         channel.update_value(percent_from_255)
 
     def set_color(self, color):
         for channel in self.channels:
@@ -136,6 +145,13 @@ class Universe:
     def blackout(self):
         #sets all values to 0
         self.controller.clear_channels()
+        self.controller.submit()
+
+    def set_strobe_percent(self, percent):
+        for fixture in self.fixtures:
+            fixture.set_strobe(percent)
+
+        self.__update_and_submit()
 
     def cyle_thru_colors(self, colors, bpm):
         hz = 1 / (bpm / 60)
@@ -184,6 +200,12 @@ class Universe:
             current_blue = current_blue + blue_jump
             current_green = current_green + green_jump
             count = count + 1
+
+            if count < iterations:
+                red_jump = int((new_color.red - current_red) / (iterations - count))    
+                green_jump = int((new_color.green - current_green) / (iterations - count))    
+                blue_jump = int((new_color.blue - current_blue) / (iterations - count))    
+
             self.__update_and_submit()
             time.sleep(0.05)
         self.set_all_colors(new_color)
@@ -192,6 +214,7 @@ class Universe:
         increment = duration / 144
         i = 1
         while i < 430:
+            found_leds = False
             for fixture in self.fixtures:
                 if fixture.name == "led_bar":
                     fixture.channels[i].value=color.green
@@ -200,9 +223,19 @@ class Universe:
                     i = i + 1
                     fixture.channels[i].value=color.red
                     i = i + 1
+                    found_leds = True
+            if not found_leds:
+                i = i + 3
             self.__update_and_submit()
             time.sleep(increment)
         self.set_all_colors(color)
+
+    def set_channel_value(self, channel_num, value):
+        for fixture in self.fixtures:
+            for channel in fixture.channels:
+                if channel.index == channel_num:
+                    channel.value = value
+        self.__update_and_submit()
 
 
 
