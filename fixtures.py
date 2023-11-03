@@ -49,7 +49,7 @@ class Color:
 def generate_led_bar_channels(starting_channel):
     channels = [] 
     
-    for i in range(0, 144):
+    for i in range(0, 145):
         channels.append(Channel(starting_channel,0,"green",""))
         starting_channel = starting_channel + 1
 
@@ -115,7 +115,7 @@ class Fixture:
 @dataclass
 class Universe:
     fixtures: list[Fixture]
-    controller: Controller = Controller('COM4')
+    controller: Controller
     filled_channels: int = 1
     random_prior_index = 0
     current_color = None
