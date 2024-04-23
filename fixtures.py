@@ -2,8 +2,11 @@ from dataclasses import dataclass
 from DMXEnttecPro import Controller
 import time
 import random
+import multiprocessing
 from threading import Event, Thread
 from threading import Timer
+
+continue_thread = False
 
 # class RepeatedTimer(object):
 #     def __init__(self, interval, function, *args, **kwargs):
@@ -30,13 +33,23 @@ from threading import Timer
 #         self._timer.cancel()
 #         self.is_running = False
 
+def loop(interval, func, *args):
+    while True: # the first call is in `interval` secs
+        func(*args)
+        time.sleep(interval)
+        if continue_thread is False:
+            return
+
 def call_repeatedly(interval, func, *args):
-    stopped = Event()
-    def loop():
-        while not stopped.wait(interval): # the first call is in `interval` secs
-            func(*args)
-    Thread(target=loop).start()    
-    return stopped.set
+    global continue_thread
+    continue_thread = True
+    process = Thread(target=loop, args=(interval, func, *args))
+    process.start()
+
+def end_repeated_call():
+    print('\tending repeating call')
+    global continue_thread
+    continue_thread = False
 
 @dataclass
 class Color:
@@ -173,6 +186,10 @@ class Universe:
 
         iterations = seconds * 20
         count = 0
+
+        if self.current_color is None:
+            self.current_color = colors[0]
+         
         current_red = self.current_color.red
         current_blue = self.current_color.blue
         current_green = self.current_color.green
@@ -229,6 +246,22 @@ class Universe:
             self.__update_and_submit()
             time.sleep(increment)
         self.set_all_colors(color)
+
+    def xy_pad(self, x, y):
+
+        x_blue_color = x*2
+        y_red_color = y*2
+
+        for fixture in self.fixtures:
+            if fixture.name != "spotlights":
+                fixture.set_color(Color(
+                    "temp",
+                    x_blue_color,
+                    self.current_color.green,
+                    y_red_color,
+                    0
+                ))
+        self.__update_and_submit()
 
     def set_channel_value(self, channel_num, value):
         for fixture in self.fixtures:
