@@ -20,8 +20,11 @@ def main():
     names = mido.get_input_names()
     korg_idx = names.index('nanoPAD2')
 
-    all_lights = Universe([], Controller('COM6'))
+    all_lights = Universe([], Controller('COM3'))
+    all_lights.add_fixture(fog_machine)
     all_lights.add_fixture(strobe)
+    all_lights.add_fixture(par_lights)
+    all_lights.add_fixture(led_bars)
 
     pad_x = 0
     pad_y = 0
@@ -38,7 +41,7 @@ def main():
     buttons.append(MidiButton(note=44, function_name="fog_on", function=all_lights.set_channel_value, state=False))
     buttons.append(MidiButton(note=45, function_name="fog_off", function=all_lights.set_channel_value, state=False))
 
-    FOG_CHANNEL = 7
+    FOG_CHANNEL = 1
 
     with mido.open_input(names[korg_idx]) as inport:
         for msg in inport:            
@@ -46,7 +49,8 @@ def main():
 
             if message['type'] == 'note_on':
                 # all_lights.blackout()
-                end_repeated_call()
+                if message['note'] not in [44, 45]:
+                    end_repeated_call()
                 all_lights.set_strobe_percent(0)
                 #FIND WHICH BUTTON WAS PRESSED
                 button = next((i for i in buttons if i.note == message['note']), None)

@@ -51,13 +51,13 @@ fog_machine = Fixture(
     name="fog machine",
     channel_count=7,
     channels=[
-        Channel(7, 0, "fog", ""),
-        Channel(8, 0, "red", ""),
-        Channel(9, 0, "green", ""),
-        Channel(10, 0, "blue", ""),
-        Channel(11, 0, "strobe", ""),
-        Channel(12, 0, "stupid", "NO THIS IS A LIE, its some color changing value: 0-9 is off, can be adjusted 10-250, 250+ is music"),
-        Channel(13, 0, "auto_sound", "")
+        Channel(1, 0, "fog", ""),
+        Channel(2, 0, "red", ""),
+        Channel(3, 0, "green", ""),
+        Channel(4, 0, "blue", ""),
+        Channel(5, 0, "strobe", ""),
+        Channel(6, 0, "stupid", "NO THIS IS A LIE, its some color changing value: 0-9 is off, can be adjusted 10-250, 250+ is music"),
+        Channel(7, 0, "auto_sound", "")
     ]
 )
 
