@@ -20,11 +20,15 @@ def main():
     names = mido.get_input_names()
     korg_idx = names.index('nanoPAD2')
 
-    all_lights = Universe([], Controller('COM3'))
-    all_lights.add_fixture(fog_machine)
+    all_lights = Universe([], Controller('COM6'))
     all_lights.add_fixture(strobe)
-    all_lights.add_fixture(par_lights)
+    all_lights.add_fixture(fog_machine)
+    # all_lights.add_fixture(par_lights)
     all_lights.add_fixture(led_bars)
+
+    print(all_lights.fixtures)
+    all_lights.current_color = colors[2]
+    all_lights.set_all_colors(all_lights.current_color)
 
     pad_x = 0
     pad_y = 0
@@ -36,12 +40,15 @@ def main():
     buttons.append(MidiButton(note=38, function_name="blackout", function=all_lights.blackout, state=False))
     buttons.append(MidiButton(note=41, function_name="color_drift", function=all_lights.color_fade, state=False))
     buttons.append(MidiButton(note=40, function_name="color_strobe", function=all_lights.cyle_thru_colors, state=False))
-    buttons.append(MidiButton(note=42, function_name="chase_to_color", function=all_lights.led_chase_to, state=False))
+    buttons.append(MidiButton(note=42, function_name="chase_to_color", function=all_lights.led_chase_to2, state=False))
     buttons.append(MidiButton(note=43, function_name="strobe_percent", function=all_lights.set_strobe_percent, state=False))
     buttons.append(MidiButton(note=44, function_name="fog_on", function=all_lights.set_channel_value, state=False))
     buttons.append(MidiButton(note=45, function_name="fog_off", function=all_lights.set_channel_value, state=False))
+    buttons.append(MidiButton(note=46, function_name="sparkle", function=all_lights.sparkle_in_led_bars, state=False))
+    buttons.append(MidiButton(note=47, function_name="rainbow_leds", function=all_lights.rainbow_sparkle_led_bars, state=False))
+    buttons.append(MidiButton(note=48, function_name="waves_led", function=all_lights.waves_led_bars, state=False))
 
-    FOG_CHANNEL = 1
+    FOG_CHANNEL = 7
 
     with mido.open_input(names[korg_idx]) as inport:
         for msg in inport:            
@@ -54,10 +61,10 @@ def main():
                 all_lights.set_strobe_percent(0)
                 #FIND WHICH BUTTON WAS PRESSED
                 button = next((i for i in buttons if i.note == message['note']), None)
-                print(f"Executing {button.function_name}")
-                print(f"\t{message['note']}")
             
                 try:
+                    print(f"Executing {button.function_name}, pad note {str(button.note)}")
+                    # print(f"\t{message['note']}")
                     #IF BUTTON IS COLOR, SET COLORS
                     if any(search.name == button.function_name for search in colors):
                         button.function(color=next((i for i in colors if i.name == button.function_name), None))
@@ -84,7 +91,29 @@ def main():
                     elif button.function_name == "chase_to_color":
                         duration = input("How long to chase to color? (seconds): ")
                         duration = float(duration)
-                        all_lights.led_chase_to(colors[np.random.randint(0, len(colors))], duration)
+                        all_lights.led_chase_to2(colors[np.random.randint(0, len(colors))], duration)
+
+                    elif button.function_name == "sparkle":
+                        duration = input("How long to sparkle to color? (seconds): ")
+                        duration = float(duration)
+                        all_lights.sparkle_in_led_bars(colors[np.random.randint(0, len(colors))], duration)
+
+                    elif button.function_name == "rainbow_leds":
+                        pixel_width = input("How wide of pixels? (1-~72): ")
+                        pixel_width = int(pixel_width)
+                        pause_duration = input("How long to pause between? (seconds): ")
+                        pause_duration = float(pause_duration)
+                        call_repeatedly(pause_duration, all_lights.rainbow_sparkle_led_bars, pixel_width, pause_duration, colors) 
+
+                    elif button.function_name == "waves_led":
+                        pixel_width = input("How wide of waves? (1-~72): ")
+                        pixel_width = int(pixel_width)
+                        pixel_gap = input("How wide of gap_between? (1-~72): ")
+                        pixel_gap = int(pixel_gap)
+                        pause_duration = input("Any delay? (seconds): ")
+                        pause_duration = float(pause_duration)
+                        color=random.choice(colors)
+                        call_repeatedly(pause_duration, all_lights.waves_led_bars, pixel_width, pixel_gap, pause_duration, color)       
 
                     elif button.function_name == "strobe_percent":
                         percent = input("What percentage strobe speed?: ")
@@ -114,7 +143,7 @@ def main():
                     pad_y = message['value']
                 elif message['control'] == 1:
                     pad_x = message['value']
-                print(message)
+                # print(message)
                 all_lights.xy_pad(pad_x, pad_y)
 
 if __name__ == "__main__":

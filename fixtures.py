@@ -44,10 +44,11 @@ def call_repeatedly(interval, func, *args):
     global continue_thread
     continue_thread = True
     process = Thread(target=loop, args=(interval, func, *args))
+    process.daemon = True
     process.start()
 
 def end_repeated_call():
-    print('\tending repeating call')
+    # print('\tending repeating call')
     global continue_thread
     continue_thread = False
 
@@ -62,7 +63,7 @@ class Color:
 def generate_led_bar_channels(starting_channel):
     channels = [] 
     
-    for i in range(0, 145):
+    for i in range(0, 144):
         channels.append(Channel(starting_channel,0,"green",""))
         starting_channel = starting_channel + 1
 
@@ -71,6 +72,7 @@ def generate_led_bar_channels(starting_channel):
         
         channels.append(Channel(starting_channel,0,"blue",""))
         starting_channel = starting_channel + 1
+        i=i+1
 
     return channels
 
@@ -227,25 +229,162 @@ class Universe:
             time.sleep(0.05)
         self.set_all_colors(new_color)
 
-    def led_chase_to(self, color, duration):
+    # def led_chase_to(self, color, duration):
+    #     increment = duration / 144
+    #     i = 1
+    #     while i < 430:
+    #         found_leds = False
+    #         for fixture in self.fixtures:
+    #             if fixture.name == "led_bar":
+    #                 fixture.channels[i].value=color.green
+    #                 i = i + 1
+    #                 fixture.channels[i].value=color.blue
+    #                 i = i + 1
+    #                 fixture.channels[i].value=color.red
+    #                 i = i + 1
+    #                 found_leds = True
+    #         if not found_leds:
+    #             i = i + 3
+    #         self.__update_and_submit()
+    #         time.sleep(increment)
+    #     self.set_all_colors(color)
+
+    def led_chase_to2(self, color, duration):
         increment = duration / 144
-        i = 1
-        while i < 430:
-            found_leds = False
-            for fixture in self.fixtures:
-                if fixture.name == "led_bar":
-                    fixture.channels[i].value=color.green
-                    i = i + 1
-                    fixture.channels[i].value=color.blue
-                    i = i + 1
-                    fixture.channels[i].value=color.red
-                    i = i + 1
-                    found_leds = True
-            if not found_leds:
-                i = i + 3
+        led_bars = next((x for x in self.fixtures if x.name == "led_bar"), None)
+        i = 0
+        while i < 432:
+            led_bars.channels[i].value=int((color.green) / (255 / led_bars.color_max))
+            i = i + 1
+            led_bars.channels[i].value=int((color.blue) / (255 / led_bars.color_max))
+            i = i + 1
+            led_bars.channels[i].value=int((color.red) / (255 / led_bars.color_max))
+            i = i + 1
             self.__update_and_submit()
             time.sleep(increment)
         self.set_all_colors(color)
+
+    def sparkle_in_led_bars(self, color, duration):
+        increment = duration / (144 / 5)
+        channels_changed = [] #times 3
+        channels_not_changed = list(range(144))
+        led_bars = next((x for x in self.fixtures if x.name == "led_bar"), None)
+        prior_color = self.current_color
+
+        k=0
+        while len(channels_changed) < 140:
+            # print(f"iterations: {k}")
+            # print(f"Channels changed: {channels_changed}")
+            # print(f"Channels NOTchanged: {channels_not_changed}")
+            if len(channels_changed) > 5:
+                for i in range(5):
+                    i = i+1
+                    remove_channel = random.choice(channels_changed)
+                    channels_changed.remove(remove_channel)
+                    channels_not_changed.append(remove_channel)
+                    self.change_pixel_led_bars(remove_channel, prior_color, led_bars)
+            for j in range(10):
+                j = j+1
+                change_channel = random.choice(channels_not_changed)
+                channels_not_changed.remove(change_channel)
+                channels_changed.append(change_channel)
+                self.change_pixel_led_bars(change_channel, color, led_bars)
+            self.__update_and_submit()
+            k=k+1
+            time.sleep(increment)
+        self.set_all_colors(color)
+                    
+    def change_pixel_led_bars(self, start144, color, led_bars):
+        index = start144*3
+        led_bars.channels[index].value=int((color.green) / (255 / led_bars.color_max))
+        led_bars.channels[index+1].value=int((color.red) / (255 / led_bars.color_max))
+        led_bars.channels[index+2].value=int((color.blue) / (255 / led_bars.color_max))
+
+    def is_pixel_144_color(self, pixel_to_check, color):
+        led_bars = next((x for x in self.fixtures if x.name == "led_bar"), None)
+        # print(led_bars)
+        # print(led_bars.channels[0])
+        # print(led_bars.channels[1])
+        # print(led_bars.channels[2])
+        # print()
+        # print(int((color.green) / (255 / led_bars.color_max)))
+        # print(int((color.red) / (255 / led_bars.color_max)))
+        # print(int((color.blue) / (255 / led_bars.color_max)))
+        if led_bars.channels[(pixel_to_check*3)].value == int((color.green) / (255 / led_bars.color_max)) \
+            and led_bars.channels[(pixel_to_check*3)+1].value == int((color.red) / (255 / led_bars.color_max)) \
+            and led_bars.channels[(pixel_to_check*3)+2].value == int((color.blue) / (255 / led_bars.color_max)):
+            
+            return True
+        else:
+            return False
+
+    def rainbow_sparkle_led_bars(self, pixel_width, pause_duration, colors):
+        led_bars = next((x for x in self.fixtures if x.name == "led_bar"), None)
+        starting_pixels = list(range(0,144,pixel_width))
+        pixel_to_change = random.choice(starting_pixels)
+        color = random.choice(colors)
+        print(range(pixel_to_change, pixel_to_change+pixel_width if pixel_to_change+pixel_width < 144 else 144))
+        for i in range(pixel_to_change, pixel_to_change+pixel_width if pixel_to_change+pixel_width < 144 else 144):
+            self.change_pixel_led_bars(i, color, led_bars)
+        self.__update_and_submit()
+
+    def waves_led_bars(self, pixel_width, pixel_gap, pause_duration, new_color):
+        led_bars = next((x for x in self.fixtures if x.name == "led_bar"), None)
+        starting_color = self.current_color
+        change_to_new_color = []
+        change_back_to_original = []
+
+
+        if new_color != starting_color:
+            # print(starting_color)
+            # print(f"result: {self.is_pixel_144_color(0, starting_color)}")
+            # print(led_bars.channels[0])
+            #if first is old, continue old, or start new
+            if self.is_pixel_144_color(0, starting_color):
+                start_new = True
+                for j in range(1,pixel_gap-1):
+                    if self.is_pixel_144_color(j, new_color):
+                        start_new = False
+                if start_new:
+                    print("start new wave")
+                    change_to_new_color.append(0)
+            #if first is new, continue new, or end
+            elif self.is_pixel_144_color(0, new_color):
+                end_new = True
+                new_end_of_starting_wave = None
+                for j in range(1, pixel_width):
+                    if self.is_pixel_144_color(j, starting_color):
+                        end_new = False
+                        if new_end_of_starting_wave is None:
+                            new_end_of_starting_wave=j
+                if not end_new:
+                    change_to_new_color.append(new_end_of_starting_wave)
+                elif end_new:
+                    change_back_to_original.append(0)
+                    change_to_new_color.append(pixel_width)
+                
+            for i in range(1,144):
+                #found the start of a full wave
+                if self.is_pixel_144_color(i,new_color):
+                    #its full
+                    if i+pixel_width < 144:
+                        if self.is_pixel_144_color(i+pixel_width-1,new_color):
+                            change_back_to_original.append(i)
+                            #in case its at the end
+                            change_to_new_color.append(i+pixel_width)
+                    i=i+pixel_width
+
+            #change the colors:
+            # print(f"changing to new color: {change_to_new_color}")
+            # print(f"changing back color: {change_back_to_original}")
+            # print("\n")
+            for x in change_to_new_color:
+                self.change_pixel_led_bars(x, new_color, led_bars)
+            for y in change_back_to_original:
+                self.change_pixel_led_bars(y, starting_color, led_bars)
+            self.__update_and_submit()
+        else:
+            print('found same color, try again')
 
     def xy_pad(self, x, y):
 
