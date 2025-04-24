@@ -12,6 +12,8 @@ class MidiButton:
     function: Callable
     state: bool
 
+
+
 def all_off():
     pass
 
@@ -19,12 +21,17 @@ def main():
     mido.set_backend('mido.backends.pygame')
     names = mido.get_input_names()
     korg_idx = names.index('nanoPAD2')
+    mode = "color"
 
     all_lights = Universe([], Controller('COM6'))
+    
     all_lights.add_fixture(strobe)
+    all_lights.add_fixture(disco_ball)
     all_lights.add_fixture(fog_machine)
     # all_lights.add_fixture(par_lights)
-    all_lights.add_fixture(led_bars)
+    # all_lights.add_fixture(led_bars)
+
+    FOG_CHANNEL = 19
 
     print(all_lights.fixtures)
     all_lights.current_color = colors[2]
@@ -48,7 +55,10 @@ def main():
     buttons.append(MidiButton(note=47, function_name="rainbow_leds", function=all_lights.rainbow_sparkle_led_bars, state=False))
     buttons.append(MidiButton(note=48, function_name="waves_led", function=all_lights.waves_led_bars, state=False))
 
-    FOG_CHANNEL = 7
+    #TURN STROBE ON OR OFF
+    buttons.append(MidiButton(note=50, function_name="toggle_strobe", function=all_lights.toggle_strobe, state=False))
+
+
 
     with mido.open_input(names[korg_idx]) as inport:
         for msg in inport:            
@@ -144,7 +154,22 @@ def main():
                 elif message['control'] == 1:
                     pad_x = message['value']
                 # print(message)
-                all_lights.xy_pad(pad_x, pad_y)
+                if mode=="color":
+                    all_lights.xy_pad(pad_x, pad_y)
+                elif mode=="spin":
+                    all_lights.xy_pad_spin(pad_x, pad_y)
+
+            elif message['type'] == 'sysex':
+                if message['data'][-1] == 0:
+                    print("XY pad in color mode")
+                    mode="color"
+                if message['data'][-1] == 1:
+                    print("XY pad in spin mode")
+                    mode="spin"
+
+            print(message)
+
+
 
 if __name__ == "__main__":
     main()

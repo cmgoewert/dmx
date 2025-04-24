@@ -19,6 +19,40 @@ colors = [
     Color("light aqua", red=0, green=219, blue=255, spotlight_num=122),
 ]
 
+disco_ball = Fixture(
+    name="disco",
+    channel_count=12,
+    channels=[
+        Channel(1, 0, "red", ""),
+        Channel(2, 0, "green", ""),
+        Channel(3, 0, "blue", ""),
+        Channel(4, 0, "white", ""),
+        Channel(5, 0, "yellow", ""),
+        Channel(6, 0, "purple", ""),
+        Channel(7, 0, "strobe", ""),
+        Channel(8, 255, "brightness", ""),
+        Channel(9, 0, "rotation", ""),
+        Channel(10, 0, "color_presets", ""),
+        Channel(11, 0, "color_spin_presets", ""),
+        Channel(12, 0, "reset", "")
+    ],
+    strobe_range=(16,131)
+)
+
+def custom_disco_set_strobe(self, percent):
+        diff = self.strobe_range[1] - self.strobe_range[0]
+        percent_from_diff = round((diff * percent) / 100)
+        #custom rules, theres gotta be a better way!
+        value = self.strobe_range[0] + percent_from_diff
+        if percent == 0:
+            value = 10
+        for channel in self.channels:
+            if channel.type == "strobe":
+                if channel.value != 0:
+                    channel.update_value(value)
+
+disco_ball.set_strobe = custom_disco_set_strobe.__get__(disco_ball, Fixture)
+
 par_lights = Fixture (
     name="par",
     channel_count=7,

@@ -386,6 +386,38 @@ class Universe:
         else:
             print('found same color, try again')
 
+    def toggle_strobe(self):
+        for fixture in self.fixtures:
+            if fixture.name == "disco":
+                for channel in fixture.channels:
+                    if channel.type == "strobe":
+                        if channel.value == 0:
+                            channel.update_value(10)
+                        else:
+                            channel.update_value(0)
+        self.__update_and_submit()
+
+    def xy_pad_spin(self, x, y):
+        for fixture in self.fixtures:
+            if fixture.name == "disco":
+                if y > 120 or y < 10:
+                    fixture.channels[8].value = 0
+                else:
+                    input_min = 0
+                    input_max = 127
+                    output_min = 31
+                    output_max = 255
+
+                    # Calculate the scaled value
+                    percentage = x / float(input_max - input_min) # Calculate percentage (0.0 to 1.0)
+                    target_range_size = output_max - output_min
+                    scaled_value = (percentage * target_range_size) + output_min
+
+                    # Round to the nearest integer for the final DMX value
+                    value = round(scaled_value)
+                    fixture.channels[8].value = value
+        self.__update_and_submit()
+
     def xy_pad(self, x, y):
 
         x_blue_color = x*2
