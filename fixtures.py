@@ -97,6 +97,21 @@ class Fixture:
     color_max: int = 255
     strobe_range: tuple = (0,255)
 
+    @property
+    def first_channel_index(self):
+        return self.channels[0].index if self.channels else None
+
+    def summary(self):
+        first = self.first_channel_index
+        return f"{self.name}: first channel {first}, channels {len(self.channels)}"
+
+    def detail_lines(self):
+        lines = []
+        for channel in self.channels:
+            description = f" ({channel.description})" if channel.description else ""
+            lines.append(f"    {channel.index}: {channel.type}{description}")
+        return lines
+
     def set_strobe(self, percent):
         diff = self.strobe_range[1] - self.strobe_range[0]
         percent_from_diff = round((diff * percent) / 100)
@@ -134,6 +149,14 @@ class Universe:
     filled_channels: int = 1
     random_prior_index = 0
     current_color = None
+
+    def fixture_report(self, show_channels=False):
+        lines = []
+        for fixture in self.fixtures:
+            lines.append(f"{fixture.name}: first channel {fixture.first_channel_index}")
+            if show_channels:
+                lines.extend(fixture.detail_lines())
+        return "\n".join(lines)
 
     def add_fixture(self, fixture):
         for channel in fixture.channels:

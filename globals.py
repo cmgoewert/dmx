@@ -67,6 +67,19 @@ par_lights = Fixture (
     ]
 )
 
+##adj mega tripar profile plus
+adj_par_lights = Fixture (
+    name="adj_par",
+    channel_count=5,
+    channels=[
+        Channel(1, 0, "red", ""),
+        Channel(2, 0, "green", ""),
+        Channel(3, 0, "blue", ""),
+        Channel(4, 0, "uv", ""),
+        Channel(5, 255, "brightness", "")
+    ]
+)
+
 strobe = Fixture(
     name="strobe", 
     channel_count=6, 

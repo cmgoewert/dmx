@@ -23,17 +23,21 @@ def main():
     korg_idx = names.index('nanoPAD2')
     mode = "color"
 
-    all_lights = Universe([], Controller('COM6'))
-    
+    all_lights = Universe([], Controller('COM3'))
+
     all_lights.add_fixture(strobe)
-    all_lights.add_fixture(disco_ball)
-    all_lights.add_fixture(fog_machine)
-    # all_lights.add_fixture(par_lights)
+    all_lights.add_fixture(par_lights)
     # all_lights.add_fixture(led_bars)
+    # all_lights.add_fixture(disco_ball)
+    # all_lights.add_fixture(fog_machine)
+    all_lights.add_fixture(adj_par_lights)
+    FOG_CHANNEL = 458
 
-    FOG_CHANNEL = 19
-
-    print(all_lights.fixtures)
+    print("Fixture summary:")
+    print(all_lights.fixture_report())
+    print("\nFixture details:")
+    print(all_lights.fixture_report(show_channels=True))
+    print()
     all_lights.current_color = colors[2]
     all_lights.set_all_colors(all_lights.current_color)
 
@@ -167,7 +171,7 @@ def main():
                     print("XY pad in spin mode")
                     mode="spin"
 
-            print(message)
+            # print(message)
 
 
 
